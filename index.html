@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strona z Wpisami</title>
+    <style>
+        body {
+            background-color: #2c2c2c;
+            color: #f1f1f1;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            width: 90%;
+            max-width: 800px;
+            background-color: #3c3c3c;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            position: relative; /* Dodane dla przycisku do góry strony */
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4c4c4c;
+            color: #f1f1f1;
+        }
+        .form-group button {
+            background-color: #5c5c5c;
+            color: #f1f1f1;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .form-group button:hover {
+            background-color: #6c6c6c;
+        }
+        .posts {
+            margin-top: 20px;
+            max-height: 500px; /* Maksymalna wysokość kontenera na wpisy */
+            overflow-y: auto; /* Scrollbar, gdy jest za dużo wpisów */
+        }
+        .post {
+            background-color: #3c3c3c;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        .post h2 {
+            margin-bottom: 5px;
+        }
+        .post .info {
+            font-size: 0.8em;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        .post p {
+            margin-top: 0;
+        }
+        .scroll-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #5c5c5c;
+            color: #f1f1f1;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: none; /* Ukryj przycisk na początku */
+        }
+        .scroll-to-top:hover {
+            background-color: #6c6c6c;
+        }
+        .delete-chat {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #e74c3c;
+            color: #f1f1f1;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .delete-chat:hover {
+            background-color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="delete-chat" onclick="deleteChat()">Usuń czat</button>
+        <h1>Dodaj Wpis</h1>
+        <div class="form-group">
+            <label for="name">Nazwa:</label>
+            <input type="text" id="name" placeholder="Twoje imię">
+        </div>
+        <div class="form-group">
+            <label for="message">Wiadomość:</label>
+            <textarea id="message" rows="4" placeholder="Twoja wiadomość"></textarea>
+        </div>
+        <div class="form-group">
+            <button onclick="addPost()">Dodaj Wpis</button>
+        </div>
+        <div class="posts" id="posts">
+            <!-- Wpisy będą się tutaj pojawiać -->
+        </div>
+        <button class="scroll-to-top" onclick="scrollToTop()">Do góry</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            displayPosts();
+            checkScrollPosition();
+        });
+
+        function addPost() {
+            const name = document.getElementById('name').value;
+            const message = document.getElementById('message').value;
+
+            if (name && message) {
+                const timestamp = new Date().toLocaleString();
+                const post = { name, message, timestamp };
+                const posts = JSON.parse(localStorage.getItem('posts')) || [];
+                posts.push(post);
+                localStorage.setItem('posts', JSON.stringify(posts));
+
+                displayPosts();
+
+                document.getElementById('name').value = '';
+                document.getElementById('message').value = '';
+
+                checkScrollPosition();
+            } else {
+                alert('Proszę wypełnić wszystkie pola');
+            }
+        }
+
+        function displayPosts() {
+            const postsContainer = document.getElementById('posts');
+            postsContainer.innerHTML = '';
+
+            let posts = JSON.parse(localStorage.getItem('posts')) || [];
+
+            // Sortowanie wpisów od najnowszego do najstarszego
+            posts.sort((a, b) => {
+                return new Date(b.timestamp) - new Date(a.timestamp);
+            });
+
+            posts.forEach(post => {
+                const postContainer = document.createElement('div');
+                postContainer.classList.add('post');
+
+                const postInfo = document.createElement('div');
+                postInfo.classList.add('info');
+                const postName = document.createElement('span');
+                postName.textContent = post.name;
+                postInfo.appendChild(postName);
+
+                const postTimestamp = document.createElement('span');
+                postTimestamp.textContent = ` - ${post.timestamp}`;
+                postInfo.appendChild(postTimestamp);
+
+                postContainer.appendChild(postInfo);
+
+                const postMessage = document.createElement('p');
+                postMessage.textContent = post.message;
+                postContainer.appendChild(postMessage);
+
+                postsContainer.appendChild(postContainer);
+            });
+        }
+
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function checkScrollPosition() {
+            const postsContainer = document.getElementById('posts');
+            const scrollToTopButton = document.querySelector('.scroll-to-top');
+
+            if (postsContainer.scrollHeight > postsContainer.clientHeight) {
+                scrollToTopButton.style.display = 'block';
+            } else {
+                scrollToTopButton.style.display = 'none';
+            }
+        }
+
+        function deleteChat() {
+            const password = prompt('Podaj hasło administratora:');
+            if (password === '8008') {
+                localStorage.removeItem('posts');
+                displayPosts();
+                alert('Czat został usunięty.');
+            } else {
+                alert('Nieprawidłowe hasło administratora.');
+            }
+        }
+    </script>
+</body>
+</html>
